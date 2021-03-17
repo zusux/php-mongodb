@@ -1,6 +1,14 @@
 php7 版本的mongodb orm
 
+安装 
 ```
+composer require zusux/php-mongodb
+```
+
+
+使用
+```
+
 创建实例
 $mongo = PhpMongodb::getInstance();
 
