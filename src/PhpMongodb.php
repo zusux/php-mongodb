@@ -44,7 +44,7 @@ class PhpMongodb{
         }else{
             $this->uri = sprintf("mongodb://%s:%d",$this->config['hostname'],$this->config['port']);
         }
-        $this->manager = new MongoDB\Driver\Manager($this->uri);
+        $this->manager = new \MongoDB\Driver\Manager($this->uri);
     }
     private function __clone(){}
     public static function getInstance($config=[])
@@ -88,7 +88,7 @@ class PhpMongodb{
      */
     public function execCommand($db,$opts){
 
-        $cmd = new MongoDB\Driver\Command($opts);
+        $cmd = new \MongoDB\Driver\Command($opts);
         $res = $this->manager->executeCommand($db,$cmd);
         return $res->toArray();
     }
@@ -105,10 +105,10 @@ class PhpMongodb{
      */
     public function aggregate($pipeline ,$isArray=true){
         $this->getNameSpace();
-        $command = new MongoDB\Driver\Command([
+        $command = new \MongoDB\Driver\Command([
             'aggregate' => $this->_table,
             'pipeline' => $pipeline,
-            'cursor' => new stdClass,
+            'cursor' => new \stdClass,
         ]);
         $cursor = $this->manager->executeCommand($this->_database, $command);
         $this->reset();
@@ -141,7 +141,7 @@ class PhpMongodb{
         if($this->_database && $this->_table){
             return sprintf("%s.%s",$this->_database,$this->_table);
         }
-        throw new Exception("未设置数据库和表");
+        throw new \Exception("未设置数据库和表");
     }
 
     /**
@@ -198,9 +198,9 @@ class PhpMongodb{
      */
     public function insert($data,$keepIdColumn=false,&$insertId){
         try{
-            $bulk = new MongoDB\Driver\BulkWrite;
+            $bulk = new \MongoDB\Driver\BulkWrite;
             if($keepIdColumn){
-                $data["_id"] = $data[$keepIdColumn] ?? new MongoDB\BSON\ObjectID;
+                $data["_id"] = $data[$keepIdColumn] ?? new \MongoDB\BSON\ObjectID;
             }
             $oidObject = $bulk->insert($data);
             $oidArr = $this->object2array($oidObject);
@@ -209,13 +209,13 @@ class PhpMongodb{
             }else{
                 $insertId = $oidArr;
             }
-            $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+            $writeConcern = new \MongoDB\Driver\WriteConcern(\MongoDB\Driver\WriteConcern::MAJORITY, 1000);
             $object =  $this->manager->executeBulkWrite($this->getNameSpace(), $bulk,$writeConcern);
             $this->reset();
             return $object->getInsertedCount();
-        }catch (MongoDB\Driver\Exception\BulkWriteException $exception){
+        }catch (\MongoDB\Driver\Exception\BulkWriteException $exception){
             $this->reset();
-            throw new Exception($exception->getMessage());
+            throw new \Exception($exception->getMessage());
         }
     }
 
@@ -228,20 +228,20 @@ class PhpMongodb{
      */
     public function insertAll($datas,$keepIdColumn=false){
         try{
-            $bulk = new MongoDB\Driver\BulkWrite;
+            $bulk = new \MongoDB\Driver\BulkWrite;
             foreach($datas as $data){
                 if($keepIdColumn){
-                    $data["_id"] = $data[$keepIdColumn] ?? new MongoDB\BSON\ObjectID;
+                    $data["_id"] = $data[$keepIdColumn] ?? new \MongoDB\BSON\ObjectID;
                 }
                 $bulk->insert($data);
             }
-            $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+            $writeConcern = new \MongoDB\Driver\WriteConcern(\MongoDB\Driver\WriteConcern::MAJORITY, 1000);
             $object =  $this->manager->executeBulkWrite($this->getNameSpace(), $bulk,$writeConcern);
             $this->reset();
             return $object->getInsertedCount();
-        }catch (MongoDB\Driver\Exception\BulkWriteException $exception){
+        }catch (\MongoDB\Driver\Exception\BulkWriteException $exception){
             $this->reset();
-            throw new Exception($exception->getMessage());
+            throw new \Exception($exception->getMessage());
         }
 
     }
@@ -267,7 +267,7 @@ class PhpMongodb{
             'skip' => $this->_skip, // 指定起始位置
         ];
         // 查询数据
-        $query = new MongoDB\Driver\Query($where, $options);
+        $query = new \MongoDB\Driver\Query($where, $options);
         $cursor = $this->manager->executeQuery($this->getNameSpace(), $query);
 
         $count = $this->count($where);
@@ -292,7 +292,7 @@ class PhpMongodb{
 
 
     public function count($where = []){
-        $command = new MongoDB\Driver\Command(
+        $command = new \MongoDB\Driver\Command(
             array(
                 "count" => $this->_table,
                 "query" => $where,
@@ -322,7 +322,7 @@ class PhpMongodb{
             'skip' => $this->_skip, // 指定起始位置
         ];
         // 查询数据
-        $query = new MongoDB\Driver\Query($where, $options);
+        $query = new \MongoDB\Driver\Query($where, $options);
         $cursor = $this->manager->executeQuery($this->getNameSpace(), $query);
 
         $this->reset();
@@ -342,21 +342,21 @@ class PhpMongodb{
     public function delete($where = [], $limit = 0,$ordered = true){
         try{
             if($ordered){
-                $bulk = new MongoDB\Driver\BulkWrite; //默认是有序的，串行执行
+                $bulk = new \MongoDB\Driver\BulkWrite; //默认是有序的，串行执行
             }else{
-                $bulk = new MongoDB\Driver\BulkWrite(['ordered' => false]);//如果要改成无序操作则加false，并行执行
+                $bulk = new \MongoDB\Driver\BulkWrite(['ordered' => false]);//如果要改成无序操作则加false，并行执行
             }
             // limit 为 1 时，删除第一条匹配数据
             // limit 为 0 时，删除所有匹配数据，默认删除
             $bulk->delete($where,['limit'=>$limit]);//删除user_id为5的字段
 
-            $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+            $writeConcern = new \MongoDB\Driver\WriteConcern(\MongoDB\Driver\WriteConcern::MAJORITY, 1000);
             $object = $this->manager->executeBulkWrite($this->getNameSpace(), $bulk,$writeConcern); //执行写入
             $this->reset();
             return $object->getDeletedCount();
-        }catch (MongoDB\Driver\Exception\BulkWriteException $exception){
+        }catch (\MongoDB\Driver\Exception\BulkWriteException $exception){
             $this->reset();
-            throw new Exception($exception->getMessage());
+            throw new \Exception($exception->getMessage());
         }
     }
 
@@ -370,11 +370,11 @@ class PhpMongodb{
     public function update(array $where,array $update, $upsert = false,  $multi = true,  $ordered = true){
         try{
             if($ordered){
-                $bulk = new MongoDB\Driver\BulkWrite; //默认是有序的，串行执行
+                $bulk = new \MongoDB\Driver\BulkWrite; //默认是有序的，串行执行
             }else{
-                $bulk = new MongoDB\Driver\BulkWrite(['ordered' => false]);//如果要改成无序操作则加false，并行执行
+                $bulk = new \MongoDB\Driver\BulkWrite(['ordered' => false]);//如果要改成无序操作则加false，并行执行
             }
-            $writeConcern = new MongoDB\Driver\WriteConcern(MongoDB\Driver\WriteConcern::MAJORITY, 1000);
+            $writeConcern = new \MongoDB\Driver\WriteConcern(\MongoDB\Driver\WriteConcern::MAJORITY, 1000);
             $bulk->update(
                 $where,
                 ['$set'=>$update],
@@ -386,9 +386,9 @@ class PhpMongodb{
             $object = $this->manager->executeBulkWrite($this->getNameSpace(), $bulk,$writeConcern);
             $this->reset();
             return $object->getModifiedCount();
-        }catch (MongoDB\Driver\Exception\BulkWriteException $exception){
+        }catch (\MongoDB\Driver\Exception\BulkWriteException $exception){
             $this->reset();
-            throw new Exception($exception->getMessage());
+            throw new \Exception($exception->getMessage());
         }
     }
 
